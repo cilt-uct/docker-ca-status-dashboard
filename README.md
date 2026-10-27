@@ -2,7 +2,7 @@
 
 A Docker Compose application that displays the availability of lecture venues and their Opencast capture agents. A scheduled service polls Opencast and stores agent names and status in Redis; a FastAPI service serves the dashboard and a JSON API.
 
-This is codebase for https://recording.uct.ac.za/.
+This is the codebase for https://recording.uct.ac.za/.
 
 ## Services
 
