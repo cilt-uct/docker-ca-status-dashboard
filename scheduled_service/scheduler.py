@@ -1,10 +1,9 @@
 import asyncio
-import os
 import time
 import redis.asyncio as redis
 
 from dateutil.parser import parse as parse_dt
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
 
 from utils.settings import FetchSettings, logger
