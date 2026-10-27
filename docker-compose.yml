@@ -1,0 +1,65 @@
+# These lines references a path for secret loading, but does not embed a secret.
+secrets:
+  passwords:
+    file: /usr/local/serverconfig/recording.cfg
+  redis_password:
+    file: /usr/local/serverconfig/recording_redis_password
+
+services:
+  scheduled_service:
+    container_name: recording_scheduler
+    build: ./scheduled_service
+    env_file:
+      - ./.env
+    volumes:
+      - ./opencast:/app/opencast
+      - ./utils:/app/utils
+    restart: always
+    depends_on:
+      - redis
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=/run/secrets/redis_password # This line references a path for secret loading, but does not embed a secret.
+    secrets:
+      - passwords
+      - redis_password
+
+  ui_service:
+    container_name: recording_ui
+    build: ./ui_service
+    env_file:
+      - ./.env
+    volumes:
+      - ./opencast:/app/opencast
+      - ./utils:/app/utils
+    ports:
+      - "8000:8000"
+    restart: always
+    depends_on:
+      - redis
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=/run/secrets/redis_password # This line references a path for secret loading, but does not embed a secret.
+    secrets:
+      - passwords
+      - redis_password
+
+  # the requirepassword flag expects actual password string, workaround read the string from the container passing the flags
+  redis:
+    container_name: recording_redis
+    image: redis:8.10-alpine
+    env_file:
+      - ./.env
+    volumes:
+      - redis_data:/data
+      - ./redis-base.conf:/redis-base.conf:ro
+      - ./redis-entrypoint.sh:/redis-entrypoint.sh:ro
+    restart: always
+    environment:
+      - REDIS_PASSWORD_FILE=/run/secrets/redis_password
+    secrets:
+      - redis_password
+    entrypoint: ["/redis-entrypoint.sh"]
+
+volumes:
+  redis_data:

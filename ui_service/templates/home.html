@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lecture Recording Status</title>
+
+    <link href="/assets/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Bootstrap 5 and DataTables Bootstrap 5 integration -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/2.3.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+
+    <link rel="stylesheet" type="text/css" href="/assets/css/styles.min.css?v=1.1">
+</head>
+
+<body>
+    <header class="uct-header">
+        <!-- UCT logo -->
+        <a href="https://www.uct.ac.za/"
+            class="uct-header-logo uct-logo-left"
+            aria-label="University of Cape Town home">
+                <img src="/assets/images/logo.svg"
+                    alt="University of Cape Town">
+        </a>
+        <a href="https://cilt.uct.ac.za/"
+            class="uct-header-logo uct-logo-right"
+            aria-label="Centre for Innovation in Learning and Teaching">
+                <img src="/assets/images/CILT-logo.svg"
+                    alt="Centre for Innovation in Learning and Teaching">
+        </a>
+    </header>
+
+    <nav class="navigation venue-status-panel" id="venueStatusPanel">
+        <div class="container-fluid page-shell py-3">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-2 mb-4 venue-status-heading">
+                <div>
+                    <p class="text-uppercase small fw-bold mb-1" style="color: var(--uct-blue); letter-spacing: .08em; font-size: 0.675em">
+                        Learning Technologies</p>
+                    <h2 class="h2 mb-1">Lecture Recording Status</h2>
+                    <p class="text-secondary mb-0">Current availability of lecture venues and recording systems.</p>
+                </div>
+                <div class="small text-secondary">Last updated: <span id="last-updated">—</span></div>
+            </div>
+
+            <section aria-label="Filter venues by status" class="row g-3 mb-4">
+                <div class="d-flex align-items-stretch gap-2 gap-md-3">
+                    <button type="button"
+                            class="venue-status-card online status-filter"
+                            data-status="Online" aria-pressed="false">
+                        <span class="status-count" id="count-online">0</span>
+                        <span class="status-details">
+                            <span class="status-name">Online</span>
+                            <span class="status-description">Available venues</span>
+                        </span>
+                    </button>
+
+                    <button type="button"
+                            class="venue-status-card recording status-filter"
+                            data-status="Recording" aria-pressed="false">
+                        <span class="status-count" id="count-recording">0</span>
+                        <span class="status-details">
+                            <span class="status-name">Recording</span>
+                            <span class="status-description">Currently recording</span>
+                        </span>
+                    </button>
+
+                    <button type="button"
+                            class="venue-status-card offline status-filter"
+                            data-status="Offline" aria-pressed="false">
+                        <span class="status-count" id="count-offline">0</span>
+                        <span class="status-details">
+                            <span class="status-name">Offline</span>
+                            <span class="status-description">Unavailable venues</span>
+                        </span>
+                    </button>
+
+                    <button type="button"
+                            id="clear-filter"
+                            class="btn btn-outline-secondary venue-clear-btn"
+                            aria-label="Clear status filter"
+                            title="Clear status filter">
+                        &times;
+                    </button>
+                </div>
+            </section>
+        </div>
+    </nav>
+
+    <main class="container-fluid page-shell py-4 py-md-5">
+        <!-- <div class="panel-heading d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
+            <div>
+                <h2 class="h5 mb-1" id="venues-heading">All venues</h2>
+                <p class="small text-secondary mb-0">Select a status card to filter. Use search to find a venue by code
+                    or name.</p>
+            </div>
+        </div> -->
+        <div class="panel-body">
+            <div class="table-responsive">
+                <table id="venues-table" class="table table-hover table-striped align-middle w-100">
+                    <thead>
+                        <tr>
+                            <th scope="col">Venue code</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Venue</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <p class="footer-note mb-0 mt-3" id="agents-message" role="status" aria-live="polite">
+                Loading venue statuses...
+            </p>
+        </div>
+        </section>
+    </main>
+
+    <footer id="footer" class="page-footer container-fluid py-4">
+        <div class="footer-copyright-wrapper row">
+            <div id="block-copyrightmessage" class="col-12 footer-note">
+                Copyright © - {{year}} - University of Cape Town - All rights reserved.
+                <a href="https://uct.ac.za/popia">POPIA</a> |
+                <a href="https://uct.ac.za/paia">PAIA</a> |
+                <a href="mailto:cilt-helpdesk@uct.ac.za?subject=Lecture%20Recording%20Status&body=Hi%20Helpdesk%2C%0A%0A">CILT Helpdesk</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/2.3.4/js/dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/2.3.4/js/dataTables.bootstrap5.min.js"></script>
+
+    <script>
+        const statusClass = {
+            Online: "badge-online",
+            Recording: "badge-recording",
+            Offline: "badge-offline"
+        };
+
+        const venueStatusPanel = document.getElementById('venueStatusPanel');
+        let compactFramePending = false;
+
+        const statusColumnIndex = 1;
+        let activeStatus = null;
+        let rows = [];
+
+        const table = new DataTable("#venues-table", {
+            data: rows,
+            columns: [
+                {
+                    data: "code",
+                    visible: false,
+                    render: (data, type) => type === "display"
+                        ? `<span class="venue-code">${escapeHtml(data)}</span>`
+                        : data
+                },
+                {
+                    data: "status",
+                    className: "venue-status",
+                    width: "114px",
+                    render: (data, type) => {
+                        if (type !== "display") return data;
+                        const cssClass = statusClass[data] || statusClass.Offline;
+                        return `<span class="status-badge ${cssClass}">${escapeHtml(data)}</span>`;
+                    }
+                },
+                {
+                    data: "name",
+                    render: (data, type) => type === "display" ? escapeHtml(data) : data
+                },
+            ],
+            pageLength: 200,
+            lengthMenu: [10, 25, 50, 100, 150, 200],
+            order: [[0, "asc"]],
+            autoWidth: false,
+            language: {
+                search: "Search venues:",
+                searchPlaceholder: "Code, name or status…",
+                lengthMenu: "Show _MENU_ venues",
+                info: "Showing _START_ to _END_ of _TOTAL_ venues",
+                infoEmpty: "No venues to show",
+                infoFiltered: "(filtered from _MAX_ total venues)",
+                zeroRecords: "No matching venues found",
+                emptyTable: "No venues have been configured"
+            },
+            layout: {
+                topStart: "info", // "pageLength",
+                topEnd: "search",
+                bottomStart: "", // "info",
+                bottomEnd: "", // "paging"
+            },
+            initComplete: function () {
+                updateCounts();
+            }
+        });
+
+        window.addEventListener('scroll', () => {
+            if (compactFramePending) return;
+
+            compactFramePending = true;
+
+            window.requestAnimationFrame(() => {
+                venueStatusPanel.classList.toggle(
+                    'is-compact',
+                    window.scrollY > 100
+                );
+
+                compactFramePending = false;
+            });
+        }, { passive: true });
+
+        // Counts are based on the full venue list, not the currently filtered search results.
+        function updateCounts() {
+            const counts = { Online: 0, Recording: 0, Offline: 0 };
+            rows.forEach(row => counts[row.status] = (counts[row.status] || 0) + 1);
+            document.getElementById("count-online").textContent = counts.Online;
+            document.getElementById("count-recording").textContent = counts.Recording;
+            document.getElementById("count-offline").textContent = counts.Offline;
+        }
+
+        document.querySelectorAll(".status-filter").forEach(button => {
+            button.addEventListener("click", () => {
+                const selected = button.dataset.status;
+                activeStatus = activeStatus === selected ? null : selected;
+                applyStatusFilter();
+            });
+        });
+
+        function applyStatusFilter() {
+            // Use an exact-match regular expression so "Online" doesn't match other text.
+            const escaped = activeStatus ? activeStatus.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") : "";
+            table.column(statusColumnIndex).search(escaped, !!activeStatus, false).draw();
+
+            document.querySelectorAll(".status-filter").forEach(button => {
+                const isActive = button.dataset.status === activeStatus;
+                button.setAttribute("aria-pressed", String(isActive));
+                button.classList.toggle("active", isActive);
+            });
+        }
+
+        document.getElementById("clear-filter").addEventListener("click", () => {
+            activeStatus = null;
+            applyStatusFilter();
+        });
+
+        function escapeHtml(value) {
+            return String(value).replace(/[&<>"']/g, char => ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;"
+            })[char]);
+        }
+
+        function agentStatus(state) {
+            switch (state.trim().toLowerCase()) {
+                case "idle":
+                case "unknown":
+                case "online":
+                    return "Online";
+                case "capturing":
+                case "recording":
+                    return "Recording";
+                default:
+                    return "Offline";
+            }
+        }
+
+        async function loadAgents() {
+            const message = document.getElementById("agents-message");
+            try {
+                const response = await fetch("/api/agents", {
+                    headers: { Accept: "application/json" },
+                    cache: "no-store"
+                });
+                if (!response.ok) {
+                    throw new Error(`Request failed (HTTP ${response.status})`);
+                }
+
+                const data = await response.json();
+                if (!data || data.status !== "success" || !Array.isArray(data.agents) ||
+                    !data.agents.every(agent => agent &&
+                        typeof agent.name === "string" && agent.name.trim() &&
+                        typeof agent.display === "string" &&
+                        typeof agent.state === "string") ||
+                    typeof data.last_refresh !== "string" ||
+                    !Number.isFinite(Date.parse(data.last_refresh))) {
+                    throw new Error("Invalid response from /api/agents");
+                }
+
+                rows = data.agents.map(agent => ({
+                    code: agent.name,
+                    name: agent.display,
+                    status: agentStatus(agent.state)
+                }));
+                table.clear().rows.add(rows).draw(false);
+                updateCounts();
+                document.getElementById("last-updated").textContent =
+                    new Intl.DateTimeFormat(undefined, {
+                        dateStyle: "medium",
+                        timeStyle: "short"
+                    }).format(new Date(data.last_refresh));
+                message.classList.remove("text-danger");
+                message.setAttribute("role", "status");
+                message.textContent = "Venue statuses refresh automatically every 5 minutes.";
+            } catch (error) {
+                console.error("Unable to load venue statuses:", error);
+                message.classList.add("text-danger");
+                message.setAttribute("role", "alert");
+                message.textContent = `Unable to load venue statuses: ${error.message}. Retrying in 5 minutes; any previously loaded data is unchanged.`;
+            } finally {
+                setTimeout(loadAgents, 5 * 60 * 1000);
+            }
+        }
+
+        loadAgents();
+    </script>
+</body>
+
+</html>

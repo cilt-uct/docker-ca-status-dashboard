@@ -1,0 +1,20 @@
+.env
+
+# Secrets - ignore all non-.example files
+secrets/*
+!secrets/*.example
+!secrets/.gitkeep
+!secrets/users-example.cfg
+
+# Local data and generated artifacts
+shared_volume/*
+
+# Python
+__pycache__/
+*.py[cod]
+.venv
+.ruff_cache
+.requirements.sha256
+
+# VSCode
+.vscode/
