@@ -50,7 +50,7 @@ app.include_router(api_router)
 @app.get("/robots.txt", response_class=PlainTextResponse)
 def robots_txt():
     return """\
-    # https://www.robotstxt.org/robotstxt.html
+# https://www.robotstxt.org/robotstxt.html
 User-agent: *
 Disallow:
 """
@@ -61,7 +61,7 @@ def humans_txt():
 /* TEAM */
 Your title: CILT - LT Team
 Site: http://www.cilt.uct.ac.za/
-Repo: https://github.com/cilt-uct/CA-status-Dashboard
+Repo: https://github.com/cilt-uct/docker-ca-status-dashboard
 Location: Cape Town, South Africa
 
 /* THANKS */
